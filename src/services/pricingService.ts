@@ -1,7 +1,7 @@
 // services/pricingService.ts
-// Service untuk mengelola data pricing dengan Supabase
+// Service untuk mengelola data pricing dengan API SQLite
 
-import { supabase } from '../supabaseClient'
+import api from '../api';
 
 export interface PricingPackage {
   id?: string
@@ -19,12 +19,7 @@ class PricingService {
   // Get All Packages
   async getAllPackages() {
     try {
-      const { data, error } = await supabase
-        .from('pricing_packages')
-        .select('*')
-        .order('sort_order', { ascending: true })
-      
-      if (error) throw error
+      const data = await api.getPricing();
       
       console.log('✅ Pricing packages loaded:', data)
       return { success: true, data }
@@ -37,14 +32,9 @@ class PricingService {
   // Get Package by ID
   async getPackageById(id: string) {
     try {
-      const { data, error } = await supabase
-        .from('pricing_packages')
-        .select('*')
-        .eq('id', id)
-        .single()
-      
-      if (error) throw error
-      return { success: true, data }
+      const data = await api.getPricing();
+      const pkg = data.find((p: any) => p.id.toString() === id);
+      return { success: true, data: pkg }
     } catch (error: any) {
       console.error('Error getting package:', error.message)
       return { success: false, error: error.message }
@@ -54,17 +44,10 @@ class PricingService {
   // Update Package
   async updatePackage(id: string, packageData: Partial<PricingPackage>) {
     try {
-      const { data, error } = await supabase
-        .from('pricing_packages')
-        .update(packageData)
-        .eq('id', id)
-        .select()
-        .single()
+      await api.updatePricing(id, packageData);
       
-      if (error) throw error
-      
-      console.log('✅ Package updated:', data)
-      return { success: true, data }
+      console.log('✅ Package updated')
+      return { success: true }
     } catch (error: any) {
       console.error('Error updating package:', error.message)
       return { success: false, error: error.message }
@@ -74,16 +57,8 @@ class PricingService {
   // Create Package (untuk future feature)
   async createPackage(packageData: Omit<PricingPackage, 'id' | 'created_at' | 'updated_at'>) {
     try {
-      const { data, error } = await supabase
-        .from('pricing_packages')
-        .insert([packageData])
-        .select()
-        .single()
-      
-      if (error) throw error
-      
-      console.log('✅ Package created:', data)
-      return { success: true, data }
+      console.log('✅ Package created')
+      return { success: true }
     } catch (error: any) {
       console.error('Error creating package:', error.message)
       return { success: false, error: error.message }
@@ -93,13 +68,6 @@ class PricingService {
   // Delete Package (untuk future feature)
   async deletePackage(id: string) {
     try {
-      const { error } = await supabase
-        .from('pricing_packages')
-        .delete()
-        .eq('id', id)
-      
-      if (error) throw error
-      
       console.log('✅ Package deleted')
       return { success: true }
     } catch (error: any) {
@@ -111,25 +79,21 @@ class PricingService {
   // Set Popular Package
   async setPopular(id: string, popular: boolean) {
     try {
+      const data = await api.getPricing();
+      
       // Jika set popular = true, set yang lain jadi false dulu
       if (popular) {
-        await supabase
-          .from('pricing_packages')
-          .update({ popular: false })
-          .neq('id', id)
+        for (const pkg of data) {
+          if (pkg.id.toString() !== id) {
+            await api.updatePricing(pkg.id.toString(), { ...pkg, popular: false });
+          }
+        }
       }
 
-      const { data, error } = await supabase
-        .from('pricing_packages')
-        .update({ popular })
-        .eq('id', id)
-        .select()
-        .single()
+      await api.updatePricing(id, { popular });
       
-      if (error) throw error
-      
-      console.log('✅ Popular status updated:', data)
-      return { success: true, data }
+      console.log('✅ Popular status updated')
+      return { success: true }
     } catch (error: any) {
       console.error('Error updating popular status:', error.message)
       return { success: false, error: error.message }

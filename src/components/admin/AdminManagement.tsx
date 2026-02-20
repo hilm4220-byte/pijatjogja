@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Trash2, Plus, X, AlertCircle, CheckCircle } from 'lucide-react';
+import api from '../../api';
 
 interface Admin {
   id: number;
+  user_id: string; 
   username: string;
   full_name: string;
   email: string;
   role: 'admin' | 'super_admin';
+  password_hash?: string;
 }
 
 interface Alert {
@@ -41,29 +44,17 @@ const AdminManagement: React.FC = () => {
 
   const fetchAdmins = async () => {
     try {
-      const token = localStorage.getItem('adminToken');
-      const response = await fetch('/api/admins', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (!response.ok) throw new Error('Gagal mengambil data admin');
-
-      const result = await response.json();
-      console.log('Data from API:', result);
-      console.log('Admin data:', result.data);
+      const data = await api.getAdmins();
+      console.log('Admin data from API:', data);
       
-      // Handle berbagai format response
-      if (Array.isArray(result)) {
-        setAdmins(result);
-      } else if (result.data && Array.isArray(result.data)) {
-        setAdmins(result.data);
-      } else if (result.admins && Array.isArray(result.admins)) {
-        setAdmins(result.admins);
-      } else {
-        setAdmins([]);
-      }
+      // Add username as a placeholder (since we don't have username in API)
+      const mappedAdmins = data.map((admin: any) => ({
+        ...admin,
+        username: admin.email.split('@')[0],
+        full_name: admin.email.split('@')[0]
+      }));
+      
+      setAdmins(mappedAdmins);
     } catch (error) {
       setAlert({
         type: 'error',
@@ -79,21 +70,11 @@ const AdminManagement: React.FC = () => {
     setSubmitting(true);
 
     try {
-      const token = localStorage.getItem('adminToken');
-      const response = await fetch('/api/admins', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(formData)
+      await api.createAdmin({
+        email: formData.email,
+        password_hash: formData.password,
+        role: formData.role
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.log('Error dari API:', errorData);
-        throw new Error(errorData.message || 'Gagal menambahkan admin');
-      }
 
       setAlert({
         type: 'success',
@@ -123,18 +104,7 @@ const AdminManagement: React.FC = () => {
     if (!confirm('Apakah Anda yakin ingin menghapus admin ini?')) return;
 
     try {
-      const token = localStorage.getItem('adminToken');
-      const response = await fetch(`/api/admins/${id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Gagal menghapus admin');
-      }
+      await api.deleteAdmin(id.toString());
 
       setAlert({
         type: 'success',
@@ -197,9 +167,6 @@ const AdminManagement: React.FC = () => {
                 Username
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Nama Lengkap
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Email
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -215,9 +182,6 @@ const AdminManagement: React.FC = () => {
               <tr key={admin.id} className="hover:bg-gray-50">
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                   {admin.username}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {admin.full_name}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   {admin.email}
@@ -268,32 +232,6 @@ const AdminManagement: React.FC = () => {
             </div>
 
             <form onSubmit={handleAddAdmin} className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Username
-                </label>
-                <input
-                  type="text"
-                  value={formData.username}
-                  onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Nama Lengkap
-                </label>
-                <input
-                  type="text"
-                  value={formData.full_name}
-                  onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  required
-                />
-              </div>
-
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Email

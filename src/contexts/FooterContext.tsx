@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { supabase } from '../supabaseClient';
+import api from '../api';
 
 interface FooterData {
   phone: string;
@@ -39,24 +39,17 @@ export const FooterProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       setLoading(true);
       setError(null);
 
-      // Fetch dari Supabase table 'footer_settings'
-      const { data, error: supabaseError } = await supabase
-        .from('footer_settings')
-        .select('*')
-        .single(); // Ambil 1 row saja
-
-      if (supabaseError) {
-        throw new Error(supabaseError.message);
-      }
+      // Fetch dari API
+      const data = await api.getFooter();
 
       if (data) {
         setFooter({
-          phone: data.phone || defaultFooter.phone,
-          location: data.location || defaultFooter.location,
+          phone: data.phone_display || defaultFooter.phone,
+          location: data.alamat || defaultFooter.location,
           email: data.email || defaultFooter.email,
-          description: data.description || defaultFooter.description,
-          copyright: data.copyright || defaultFooter.copyright,
-          tagline: data.tagline || defaultFooter.tagline
+          description: data.site_description || defaultFooter.description,
+          copyright: data.copyright_text || defaultFooter.copyright,
+          tagline: data.copyright_subtext || defaultFooter.tagline
         });
       }
 

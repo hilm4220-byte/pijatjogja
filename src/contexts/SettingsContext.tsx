@@ -1,6 +1,6 @@
 // src/contexts/SettingsContext.tsx
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { supabase } from '../supabaseClient'; // ⭐ Import supabase client Anda
+import api from '../api';
 
 interface Settings {
   site_name: string;
@@ -34,19 +34,10 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setLoading(true);
       setError(null);
 
-      console.log('📥 Fetching settings from Supabase...');
+      console.log('📥 Fetching settings from API...');
       
-      // ⭐ FETCH LANGSUNG DARI SUPABASE
-      const { data, error: supabaseError } = await supabase
-        .from('settings')
-        .select('setting_key, setting_value');
-
-      if (supabaseError) {
-        console.error('❌ Supabase error:', supabaseError);
-        throw new Error(supabaseError.message);
-      }
-
-      console.log('📦 Raw Supabase data:', data);
+      const data = await api.getSettings();
+      console.log('📦 Raw API data:', data);
 
       // Parse response
       let settingsObj: Settings = { ...defaultSettings };
@@ -90,30 +81,6 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }, 30000); // 30 seconds
 
     return () => clearInterval(interval);
-  }, []);
-
-  // Listen to storage events for cross-tab sync
-  useEffect(() => {
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'settings-updated') {
-        console.log('🔄 Settings updated in another tab, refreshing...');
-        fetchSettings();
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, []);
-
-  // Listen to custom events (same tab)
-  useEffect(() => {
-    const handleCustomEvent = () => {
-      console.log('🔄 Settings updated event received, refreshing...');
-      fetchSettings();
-    };
-
-    window.addEventListener('settings-updated', handleCustomEvent);
-    return () => window.removeEventListener('settings-updated', handleCustomEvent);
   }, []);
 
   const refreshSettings = async () => {

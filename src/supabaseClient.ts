@@ -1,10 +1,14 @@
-import { createClient } from '@supabase/supabase-js'
+import db, { auth, setSession, clearSession } from './db'
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables')
+// Export db and auth to mimic Supabase API
+export const supabase = {
+  db,
+  auth,
+  from: (tableName: string) => db.from(tableName)
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+// Export auth functions directly
+export { auth, setSession, clearSession }
+
+// For backwards compatibility - some components import just 'supabase'
+export default supabase

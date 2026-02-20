@@ -1,7 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
-import { useEffect } from 'react'
-import { supabase } from './supabaseClient'
-import { SettingsProvider } from './contexts/SettingsContext' // ⭐ TAMBAHKAN INI
+import { SettingsProvider } from './contexts/SettingsContext'
 import Header from './components/Header'
 import Hero from './components/Hero'
 import Features from './components/Features'
@@ -14,7 +12,7 @@ import Footer from './components/Footer'
 import FloatingWhatsApp from './components/FloatingWhatsApp'
 import AdminSettings from './pages/AdminSettings'
 import AdminLogin from './pages/AdminLogin'
-// import ProtectedRoute from './components/ProtectedRoute' // DISABLE DULU
+import ProtectedRoute from './components/ProtectedRoute'
 
 function HomePage() {
   return (
@@ -33,43 +31,22 @@ function HomePage() {
   )
 }
 
-function App() {
-  // Test Koneksi Supabase
-  useEffect(() => {
-    async function testSupabaseConnection() {
-      try {
-        console.log('🔄 Testing Supabase connection...')
-        
-        const { data, error } = await supabase
-          .from('settings') // ⭐ GANTI jadi 'settings' bukan '_test_table'
-          .select('*')
-          .limit(1)
-        
-        if (error) {
-          console.error('⚠️ Error query (tapi koneksi OK):', error.message)
-          console.log('✅ Koneksi ke Supabase BERHASIL!')
-        } else {
-          console.log('✅ Koneksi ke Supabase BERHASIL!')
-          console.log('📊 Sample data:', data)
-        }
-      } catch (err) {
-        console.error('❌ Koneksi GAGAL! Cek .env file Anda')
-        console.error('Error:', err)
-      }
-    }
-    
-    testSupabaseConnection()
-  }, [])
-
+function AdminPage() {
   return (
-    // ⭐ WRAP dengan SettingsProvider
+    <ProtectedRoute>
+      <AdminSettings />
+    </ProtectedRoute>
+  )
+}
+
+function App() {
+  return (
     <SettingsProvider>
       <Router>
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/admin/login" element={<AdminLogin />} />
-          {/* TANPA ProtectedRoute dulu - langsung bisa akses */}
-          <Route path="/admin" element={<AdminSettings />} />
+          <Route path="/admin" element={<AdminPage />} />
         </Routes>
       </Router>
     </SettingsProvider>

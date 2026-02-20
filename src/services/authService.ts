@@ -1,7 +1,7 @@
 // services/authService.ts
-// Service untuk handle authentication dengan Supabase
+// Service untuk handle authentication dengan API SQLite
 
-import { supabase } from '../supabaseClient'
+import api from '../api';
 
 export interface LoginCredentials {
   email: string
@@ -18,34 +18,31 @@ class AuthService {
   // Login
   async login(credentials: LoginCredentials) {
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: credentials.email,
-        password: credentials.password
-      })
-
-      if (error) throw error
+      const data = await api.login(credentials.email, credentials.password);
 
       if (!data.user) {
         throw new Error('Login gagal')
       }
 
       // Check if user is admin
-      const isAdmin = await this.checkIsAdmin(data.user.id)
+      const isAdmin = data.user.role === 'admin' || data.user.role === 'super_admin';
       
       if (!isAdmin) {
-        // Logout kalau bukan admin
-        await this.logout()
         throw new Error('Anda tidak memiliki akses admin')
       }
 
       console.log('✅ Login berhasil:', data.user.email)
       
+      // Simpan session
+      localStorage.setItem('pijatjogja_session', JSON.stringify(data.user));
+      localStorage.setItem('pijatjogja_token', data.user.id);
+      
       return {
         success: true,
         user: {
           id: data.user.id,
-          email: data.user.email || '',
-          role: 'admin'
+          email: data.user.email,
+          role: data.user.role
         }
       }
     } catch (error: any) {
@@ -60,9 +57,8 @@ class AuthService {
   // Logout
   async logout() {
     try {
-      const { error } = await supabase.auth.signOut()
-      if (error) throw error
-      
+      localStorage.removeItem('pijatjogja_session');
+      localStorage.removeItem('pijatjogja_token');
       console.log('✅ Logout berhasil')
       return { success: true }
     } catch (error: any) {
@@ -77,22 +73,19 @@ class AuthService {
   // Get Current User
   async getCurrentUser(): Promise<User | null> {
     try {
-      const { data: { user }, error } = await supabase.auth.getUser()
-      
-      if (error) throw error
-      if (!user) return null
+      const token = localStorage.getItem('pijatjogja_token');
+      if (!token) return null;
 
-      // Check if admin
-      const isAdmin = await this.checkIsAdmin(user.id)
-      
-      if (!isAdmin) {
-        return null
-      }
+      const data = await api.getUser(token);
+      if (!data.user) return null;
+
+      const isAdmin = data.user.role === 'admin' || data.user.role === 'super_admin';
+      if (!isAdmin) return null;
 
       return {
-        id: user.id,
-        email: user.email || '',
-        role: 'admin'
+        id: data.user.id,
+        email: data.user.email,
+        role: data.user.role
       }
     } catch (error: any) {
       console.error('Error getting current user:', error.message)
@@ -103,22 +96,11 @@ class AuthService {
   // Check if user is admin
   async checkIsAdmin(userId: string): Promise<boolean> {
     try {
-      const { data, error } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', userId)
-        .eq('role', 'admin')
-        .single()
+      const token = localStorage.getItem('pijatjogja_token');
+      if (!token) return false;
 
-      if (error) {
-        // Jika error karena tidak ada data, return false
-        if (error.code === 'PGRST116') {
-          return false
-        }
-        throw error
-      }
-
-      return data?.role === 'admin'
+      const data = await api.getUser(token);
+      return data.user?.role === 'admin' || data.user?.role === 'super_admin';
     } catch (error: any) {
       console.error('Error checking admin:', error.message)
       return false
@@ -127,25 +109,22 @@ class AuthService {
 
   // Listen to auth state changes
   onAuthStateChange(callback: (user: User | null) => void) {
-    return supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth state changed:', event)
-      
-      if (session?.user) {
-        const isAdmin = await this.checkIsAdmin(session.user.id)
-        
-        if (isAdmin) {
-          callback({
-            id: session.user.id,
-            email: session.user.email || '',
-            role: 'admin'
-          })
-        } else {
-          callback(null)
-        }
-      } else {
-        callback(null)
-      }
-    })
+    // Check session periodically
+    const checkSession = async () => {
+      const user = await this.getCurrentUser();
+      callback(user);
+    };
+    
+    checkSession();
+    
+    // Return unsubscribe function
+    return { 
+      data: { 
+        subscription: { 
+          unsubscribe: () => {} 
+        } 
+      } 
+    };
   }
 
   // Check if currently logged in

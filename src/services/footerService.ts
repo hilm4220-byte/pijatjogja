@@ -1,7 +1,7 @@
 // services/footerService.ts
-// Service untuk mengelola data footer dengan Supabase
+// Service untuk mengelola data footer dengan API SQLite
 
-import { supabase } from '../supabaseClient'
+import api from '../api';
 
 export interface FooterData {
   id?: string
@@ -23,23 +23,7 @@ class FooterService {
   // Get Footer Data
   async getFooter() {
     try {
-      const { data, error } = await supabase
-        .from('footer_settings')
-        .select('*')
-        .limit(1)
-        .single()
-      
-      if (error) {
-        // Jika tidak ada data, return default values
-        if (error.code === 'PGRST116') {
-          console.log('No footer data found, returning defaults')
-          return { 
-            success: true, 
-            data: this.getDefaultFooter() 
-          }
-        }
-        throw error
-      }
+      const data = await api.getFooter();
       
       console.log('✅ Footer data loaded:', data)
       return { success: true, data }
@@ -56,45 +40,9 @@ class FooterService {
   // Update Footer Data
   async updateFooter(footerData: Partial<FooterData>) {
     try {
-      // Cek apakah sudah ada data
-      const { data: existingData, error: checkError } = await supabase
-        .from('footer_settings')
-        .select('id')
-        .limit(1)
-        .single()
-
-      if (checkError && checkError.code !== 'PGRST116') {
-        throw checkError
-      }
-
-      let result
-
-      if (existingData) {
-        // Update existing data
-        const { data, error } = await supabase
-          .from('footer_settings')
-          .update(footerData)
-          .eq('id', existingData.id)
-          .select()
-          .single()
-        
-        if (error) throw error
-        result = data
-        console.log('✅ Footer updated:', data)
-      } else {
-        // Insert new data
-        const { data, error } = await supabase
-          .from('footer_settings')
-          .insert([footerData])
-          .select()
-          .single()
-        
-        if (error) throw error
-        result = data
-        console.log('✅ Footer created:', data)
-      }
-
-      return { success: true, data: result }
+      const result = await api.updateFooter(footerData);
+      console.log('✅ Footer updated')
+      return { success: true }
     } catch (error: any) {
       console.error('Error updating footer:', error.message)
       return { success: false, error: error.message }
@@ -102,7 +50,7 @@ class FooterService {
   }
 
   // Get Default Footer (fallback)
-  private getDefaultFooter(): FooterData {
+  getDefaultFooter(): FooterData {
     return {
       site_name: 'Pijat Jogja',
       site_description: 'Layanan pijat panggilan profesional area Yogyakarta. Terapis bersertifikat, layanan 24 jam, harga terjangkau.',
