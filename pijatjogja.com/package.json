@@ -1,0 +1,32 @@
+{
+  "name": "pijat-jogja",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node test-cronjob.js all",
+    "test:login": "node test-cronjob.js login",
+    "test:fetch": "node test-cronjob.js fetch",
+    "test:db": "node test-cronjob.js db",
+    "test:server": "node test-cronjob.js server",
+    "test:logs": "node test-cronjob.js logs",
+    "test:cleanup": "node test-cronjob.js cleanup"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.97.0",
+    "axios": "^1.7.7",
+    "better-sqlite3": "^12.6.2",
+    "body-parser": "^2.2.0",
+    "cors": "^2.8.6",
+    "dotenv": "^16.6.1",
+    "express": "^5.2.1",
+    "lowdb": "^7.0.1",
+    "node-cron": "^3.0.3",
+    "pocketbase": "^0.26.4",
+    "react-router-dom": "^7.9.5"
+  }
+}
