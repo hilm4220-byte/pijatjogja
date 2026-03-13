@@ -166,8 +166,20 @@ export const api = {
       .eq('id', 1)
     if (error) throw error
     return { success: true }
+  },
+  updateSetting: async (key: string, value: string) => {
+    if (API_URL) {
+      const client = new ApiClient(API_URL as string);
+      return await client.updateSetting(key, value);
+    }
+    const { error } = await supabase
+      .from('settings')
+      .upsert({ setting_key: key, setting_value: value }, { onConflict: 'setting_key' })
+    if (error) throw error
+    return { success: true }
   }
   // Add more as needed
 }
+
 
 export default api
