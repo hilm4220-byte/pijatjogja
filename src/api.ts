@@ -63,13 +63,15 @@ export const api = {
     return data || [];
   },
 
+
   updateSetting: async (key: string, value: string): Promise<{ success: boolean }> => {
     const { error } = await supabase
       .from('settings')
-      .upsert({ setting_key: key, setting_value: value });
+      .upsert({ setting_key: key, setting_value: value }, { onConflict: 'setting_key' });
     if (error) throw error;
     return { success: true };
   }
+
 };
 
 export default api;
