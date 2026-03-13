@@ -2,7 +2,7 @@
 // API Client untuk koneksi ke server SQLite
 
 import { supabase } from './lib/supabase'
-const API_URL = import.meta.env.VITE_USE_LOCAL_API === 'true' ? 'http://localhost:3001/api' : null;
+const API_URL = 'http://localhost:3001/api';
 
 class ApiClient {
   private baseUrl: string;
@@ -152,20 +152,48 @@ export const api = {
     return data
   },
   updatePricing: async (id: string, data: any) => {
+    if (API_URL) {
+      const client = new ApiClient(API_URL as string);
+      return await client.updatePricing(id, data);
+    }
+    // Supabase: fetch existing row to handle UUID id properly
+    const { data: existing, error: fetchError } = await supabase
+      .from('pricing_packages')
+      .select('*')
+      .eq('id', id)
+      .single();
+    if (fetchError) throw fetchError;
+    if (!existing) {
+      throw new Error(`No pricing package found with id: ${id}`);
+    }
     const { error } = await supabase
       .from('pricing_packages')
       .update(data)
-      .eq('id', id)
-    if (error) throw error
-    return { success: true }
+      .eq('id', existing.id);
+    if (error) throw error;
+    return { success: true };
   },
   updateFooter: async (data: any) => {
+    if (API_URL) {
+      const client = new ApiClient(API_URL as string);
+      return await client.updateFooter(data);
+    }
+    // Supabase: fetch existing row to get correct UUID id
+    const { data: existing, error: fetchError } = await supabase
+      .from('footer_settings')
+      .select('*')
+      .limit(1)
+      .single();
+    if (fetchError && fetchError.code !== 'PGRST116') throw fetchError; // Ignore no row
+    if (!existing) {
+      throw new Error('No footer_settings row found in Supabase. Please create one first.');
+    }
     const { error } = await supabase
       .from('footer_settings')
       .update(data)
-      .eq('id', 1)
-    if (error) throw error
-    return { success: true }
+      .eq('id', existing.id);
+    if (error) throw error;
+    return { success: true };
   },
   updateSetting: async (key: string, value: string) => {
     if (API_URL) {
