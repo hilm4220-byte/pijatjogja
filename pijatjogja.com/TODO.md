@@ -1,15 +1,16 @@
-# TODO: Fix Console Errors & Migrate to Supabase
+# TODO: Fix Footer Update UUID Error
 
-## Progress Tracker
-- [ ] 1. Start server.js (node server.js) - fix fetch errors
-- [ ] 2. Create project/public/vite.svg - fix 404 favicon
-- [ ] 3. Create Supabase tables (settings, footer_settings, pricing_packages)
-- [ ] 4. Create project/src/lib/supabase.ts (real client)
-- [ ] 5. Edit project/src/api.ts → Supabase calls
-- [ ] 6. Update services: pricingService.ts, footerService.ts, authService.ts
-- [ ] 7. Update contexts: SettingsContext.tsx, FooterContext.tsx
-- [ ] 8. Test: cd project &amp;&amp; npm run dev - no errors
-- [ ] 9. Optional: Deprecate server.js for prod
+**Status**: Plan Approved - Breakdown into Steps
 
-**Status: Plan approved - starting step 1**
+## Completed [0/5]
+
+### ✅ 1. Create TODO.md 
+### ✅ 2. Edit project/src/api.ts - Fix updateFooter with UUID fetch
+### ✅ 3. Edit project/src/api.ts - Fix updatePricing with UUID fetch  
+### ☐ 4. Test AdminFooter save functionality  
+### ☐ 5. Verify getFooter returns updated data
+### ☐ 5. Supabase row check/insert if missing
+### ☐ 6. Update TODO.md & attempt_completion
+
+**Next**: Test AdminFooter & AdminPricingSettings saves (create Supabase rows first if needed)
 
