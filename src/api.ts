@@ -1,7 +1,8 @@
 // project/src/api.ts
 // API Client untuk koneksi ke server SQLite
 
-const API_URL = 'http://localhost:3001/api';
+import { supabase } from './lib/supabase'
+const API_URL = import.meta.env.VITE_USE_LOCAL_API === 'true' ? 'http://localhost:3001/api' : null;
 
 class ApiClient {
   private baseUrl: string;
@@ -97,5 +98,76 @@ class ApiClient {
   }
 }
 
-export const api = new ApiClient(API_URL);
-export default api;
+// Temporary fix - use local server or implement Supabase
+interface ApiResponse<T> {
+  data: T | null
+  error: any | null
+}
+
+export const api = {
+  getPricing: async (): Promise<any[]> => {
+    if (API_URL) {
+      const client = new ApiClient(API_URL as string);
+      return await client.getPricing();
+    }
+    const { data, error } = await supabase
+      .from('pricing_packages')
+      .select('*')
+      .order('sort_order', { ascending: true })
+    if (error) throw error
+    return data || []
+  },
+  getFooter: async (): Promise<any> => {
+    if (API_URL) {
+      const client = new ApiClient(API_URL as string);
+      return await client.getFooter();
+    }
+    const { data, error } = await supabase
+      .from('footer_settings')
+      .select('*')
+      .limit(1)
+      .single()
+    if (error) throw error
+    return data
+  },
+  getSettings: async (): Promise<any[]> => {
+    if (API_URL) {
+      const client = new ApiClient(API_URL as string);
+      return await client.getSettings();
+    }
+    const { data, error } = await supabase
+      .from('settings')
+      .select('*')
+    if (error) throw error
+    return data || []
+  },
+  login: async (email: string, password: string) => {
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+    if (error) throw error
+    return data
+  },
+  getUser: async () => {
+    const { data, error } = await supabase.auth.getUser()
+    if (error) throw error
+    return data
+  },
+  updatePricing: async (id: string, data: any) => {
+    const { error } = await supabase
+      .from('pricing_packages')
+      .update(data)
+      .eq('id', id)
+    if (error) throw error
+    return { success: true }
+  },
+  updateFooter: async (data: any) => {
+    const { error } = await supabase
+      .from('footer_settings')
+      .update(data)
+      .eq('id', 1)
+    if (error) throw error
+    return { success: true }
+  }
+  // Add more as needed
+}
+
+export default api
